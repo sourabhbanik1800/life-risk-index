@@ -444,12 +444,15 @@ if calculate:
     debt_health = 1.0 - min(debt_to_income, 1.0)
 
     # EMI burden on monthly cashflow (consider monthly_investment as committed outflow too)
-    effective_monthly_outflows = monthly_expense + monthly_emi + monthly_investment
+    effective_monthly_outflows = monthly_expense + monthly_emi + (monthly_investment * 0.4)
     emi_burden = (monthly_emi / monthly_income) if monthly_income > 0 else 1.0
     emi_health = 1.0 - min(emi_burden, 1.0)
 
     # savings rate (monthly): include monthly_investment as positive saving behavior
-    monthly_savings_flow = max(monthly_income - monthly_expense - monthly_investment, 0.0)
+    monthly_savings_flow = max(monthly_income - monthly_expense, 0.0)
+    investment_boost = min(monthly_investment / monthly_income, 0.3)
+
+    savings_rate = (monthly_savings_flow / monthly_income) + investment_boost
     savings_rate = (monthly_savings_flow / monthly_income) if monthly_income > 0 else 0.0
     savings_rate_clamped = min(max(savings_rate, 0.0), 1.0)
 
