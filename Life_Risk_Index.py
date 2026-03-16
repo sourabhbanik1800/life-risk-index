@@ -651,9 +651,9 @@ if calculate:
 
         # show small computed numbers
         st.markdown(f"- Emergency months covered (incl. partial investments): **{round(emergency_months,2)} months**")
-        st.markdown(f"- Debt-to-income ratio (annual): **{round(debt_to_income,2)}**")
-        st.markdown(f"- EMI burden (monthly_emi / income): **{round(emi_burden,2)}**")
-        st.markdown(f"- Monthly investment treated as partially liquid: **₹{round(effective_liquid_from_investment,2)}** per month equivalent")
+        st.markdown(f"- Debt-to-income ratio (annual): **{round(debt_ratio,2)}**")
+        st.markdown(f"- EMI burden (monthly_emi / income): **{round(emi_ratio,2)}**")
+        st.markdown(f"- SIP to income ratio: **{round(sip_ratio,2)}**")
         st.info(f"Final Financial Score = {round(F*100,2)}%")
 
     # ---------- Career ----------
