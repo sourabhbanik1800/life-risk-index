@@ -434,53 +434,53 @@ if calculate:
     # ----- Financial (F) - integrated model with monthly_investment -----
    # ----- Financial Stability Score (Enhanced Logic) -----
 
-# Step 1 — Total expenses include EMI and SIP
-total_expense = monthly_expense + monthly_emi + monthly_investment
+    # Step 1 — Total expenses include EMI and SIP
+    total_expense = monthly_expense + monthly_emi + monthly_investment
 
-# Step 2 — Cashflow ratio
-expense_ratio = total_expense / monthly_income if monthly_income > 0 else 1
+    # Step 2 — Cashflow ratio
+    expense_ratio = total_expense / monthly_income if monthly_income > 0 else 1
 
-# Ideal financial planning guideline
-# Expenses should not exceed ~70% of income
+    # Ideal financial planning guideline
+    # Expenses should not exceed ~70% of income
 
-cashflow_score = 1 - min(expense_ratio, 1)
+    cashflow_score = 1 - min(expense_ratio, 1)
 
-# Step 3 — EMI burden (debt stress)
-emi_ratio = monthly_emi / monthly_income if monthly_income > 0 else 1
+    # Step 3 — EMI burden (debt stress)
+    emi_ratio = monthly_emi / monthly_income if monthly_income > 0 else 1
 
-# Ideal EMI limit ~30% income
-emi_health = 1 - min(emi_ratio / 0.30, 1)
+    # Ideal EMI limit ~30% income
+    emi_health = 1 - min(emi_ratio / 0.30, 1)
 
-# Step 4 — Investment discipline (SIP reward)
-sip_ratio = monthly_investment / monthly_income if monthly_income > 0 else 0
+    # Step 4 — Investment discipline (SIP reward)
+    sip_ratio = monthly_investment / monthly_income if monthly_income > 0 else 0
 
-# Ideal SIP = 20–30% income
-sip_score = min(sip_ratio / 0.25, 1)
+    # Ideal SIP = 20–30% income
+    sip_score = min(sip_ratio / 0.25, 1)
 
-# Step 5 — Emergency fund calculation
-emergency_months = total_savings / monthly_expense if monthly_expense > 0 else 0
-emergency_score = min(emergency_months / 6, 1)
+    # Step 5 — Emergency fund calculation
+    emergency_months = total_savings / monthly_expense if monthly_expense > 0 else 0
+    emergency_score = min(emergency_months / 6, 1)
 
-# Step 6 — Debt burden
-annual_income = monthly_income * 12 if monthly_income > 0 else 0
-debt_ratio = total_debt / annual_income if annual_income > 0 else 1
-debt_score = 1 - min(debt_ratio, 1)
-
-# Step 7 — Job stability multiplier
-js_map = {"Low":0.9,"Medium":1,"High":1.05}
-job_factor = js_map[job_stability]
-
-# Step 8 — Final Financial Score
-F = (
-      0.30 * emergency_score
-    + 0.20 * debt_score
-    + 0.20 * emi_health
-    + 0.15 * cashflow_score
-    + 0.15 * sip_score
-)
-
-F = F * job_factor
-F = max(0, min(F,1))
+    # Step 6 — Debt burden
+    annual_income = monthly_income * 12 if monthly_income > 0 else 0
+    debt_ratio = total_debt / annual_income if annual_income > 0 else 1
+    debt_score = 1 - min(debt_ratio, 1)
+    
+    # Step 7 — Job stability multiplier
+    js_map = {"Low":0.9,"Medium":1,"High":1.05}
+    job_factor = js_map[job_stability]
+    
+    # Step 8 — Final Financial Score
+    F = (
+          0.30 * emergency_score
+        + 0.20 * debt_score
+        + 0.20 * emi_health
+        + 0.15 * cashflow_score
+        + 0.15 * sip_score
+    )
+    
+    F = F * job_factor
+    F = max(0, min(F,1))
 
     # ----- Career (S) with job_stability included -----
     edu_map = {"High School": 1, "Graduate": 2, "Post Graduate": 3, "Professional": 4}
