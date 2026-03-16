@@ -634,7 +634,7 @@ if calculate:
         emergency_contribution = 0.40 * emergency_score
         debt_contribution = 0.25 * debt_score
         emi_contribution = 0.20 * emi_health
-        savings_contribution = 0.15 * savings_rate_clamped
+        sip_contribution = 0.15 * sip_score
 
         st.markdown("**Financial resilience factors**")
         st.write(f"Emergency Fund Coverage contribution: **{round(emergency_contribution*100,2)}%**")
