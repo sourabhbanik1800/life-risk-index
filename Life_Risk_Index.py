@@ -223,7 +223,7 @@ with st.sidebar.container():
         if st.button("🔓 Logout"):
             st.session_state["authenticated"] = False
             st.session_state["username"] = ""
-            st.experimental_rerun()
+            st.rerun()
     else:
         username_input = st.text_input("Username", key="login_user")
         password_input = st.text_input("Password", type="password", key="login_pwd")
@@ -232,7 +232,7 @@ with st.sidebar.container():
                 st.session_state["authenticated"] = True
                 st.session_state["username"] = username_input.strip()
                 st.success(f"Welcome, {st.session_state['username']}!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Incorrect username or password")
 
