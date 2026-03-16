@@ -500,7 +500,7 @@ if calculate:
 
     S_raw = 0.30 * edu_score + 0.30 * ind_score + 0.25 * upskill_score + 0.15 * cert_recency
     # incorporate job stability as multiplier (stable job increases career resilience slightly)
-    S = S_raw * age_boost * js_factor
+    S = S_raw * age_boost * job_factor
     S = max(0.0, min(S, 1.0))
 
     # if financial situation is poor, slightly reduce career resilience (less ability to invest in learning)
