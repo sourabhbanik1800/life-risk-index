@@ -1,31 +1,83 @@
-# Life_Risk_Index_with_Login.py
+# Life_Risk_Index.py
 import streamlit as st
 import hashlib
+import sqlite3
+import os
 import numpy as np
 
-# -------- Helpers: password hashing and auth ----------
+# -------------------------
+# Config: database path
+# -------------------------
+DB_PATH = os.path.join(os.path.dirname(__file__), "users.db")
+
+# -------------------------
+# Database helpers
+# -------------------------
+def get_db_connection():
+    # allow usage across Streamlit threads
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    return conn
+
+def init_db():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    # Insert demo admin account if not exists
+    cur.execute("SELECT COUNT(*) FROM users WHERE username = ?", ("admin",))
+    if cur.fetchone()[0] == 0:
+        cur.execute(
+            "INSERT INTO users (username, password) VALUES (?, ?)",
+            ("admin", hash_password("admin123")),
+        )
+        conn.commit()
+    return conn, cur
+
 def hash_password(password: str) -> str:
+    """Return SHA-256 hex digest of password (demo purposes)."""
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
-def verify_password(username: str, password: str, users: dict) -> bool:
-    """Return True if username exists and password matches hashed password in users dict."""
-    if username in users:
-        return users[username] == hash_password(password)
-    return False
+def add_user(username: str, password: str, cur, conn) -> bool:
+    """Return True if user added, False if already exists or error."""
+    try:
+        cur.execute(
+            "INSERT INTO users (username, password) VALUES (?, ?)",
+            (username, hash_password(password)),
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
 
-# initialize session state for auth and user store
-if "users" not in st.session_state:
-    # default demo user: admin / admin123
-    st.session_state["users"] = {"admin": hash_password("admin123")}
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
-if "username" not in st.session_state:
-    st.session_state["username"] = ""
+def verify_user(username: str, password: str, cur) -> bool:
+    """Return True if username/password matches DB."""
+    cur.execute(
+        "SELECT password FROM users WHERE username = ?",
+        (username,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return False
+    stored_hash = row[0]
+    return stored_hash == hash_password(password)
 
-# ---------- Page config ----------
+# -------------------------
+# Initialize DB & cursor
+# -------------------------
+conn, cur = init_db()
+
+# -------------------------
+# Streamlit page config & CSS
+# -------------------------
 st.set_page_config(page_title="Life Risk Index", page_icon="📊", layout="wide")
 
-# ---------- CSS (kept from original app) ----------
 st.markdown(
     """
 <style>
@@ -73,7 +125,17 @@ st.markdown(
 
 st.markdown('<div class="main-title">Life Risk Index Dashboard</div>', unsafe_allow_html=True)
 
-# ---------- Authentication sidebar ----------
+# -------------------------
+# Session state for auth
+# -------------------------
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+if "username" not in st.session_state:
+    st.session_state["username"] = ""
+
+# -------------------------
+# Sidebar: Authentication
+# -------------------------
 with st.sidebar.expander("🔐 Account"):
     if st.session_state["authenticated"]:
         st.write(f"Signed in as **{st.session_state['username']}**")
@@ -86,7 +148,7 @@ with st.sidebar.expander("🔐 Account"):
         username_input = st.text_input("Username", key="login_user")
         password_input = st.text_input("Password", type="password", key="login_pwd")
         if st.button("Sign in"):
-            if verify_password(username_input.strip(), password_input, st.session_state["users"]):
+            if verify_user(username_input.strip(), password_input, cur):
                 st.session_state["authenticated"] = True
                 st.session_state["username"] = username_input.strip()
                 st.success(f"Welcome, {st.session_state['username']}!")
@@ -95,18 +157,19 @@ with st.sidebar.expander("🔐 Account"):
                 st.error("Incorrect username or password")
 
         st.markdown("---")
-        st.write("New user? Create an account (stored for current session only)")
+        st.write("New user? Create an account (will persist across sessions)")
         new_user = st.text_input("New username", key="reg_user")
         new_pass = st.text_input("New password", type="password", key="reg_pwd")
         if st.button("Create account"):
             nu = new_user.strip()
             if not nu or not new_pass:
                 st.error("Provide both username and password")
-            elif nu in st.session_state["users"]:
-                st.warning("Username already exists — pick another")
             else:
-                st.session_state["users"][nu] = hash_password(new_pass)
-                st.success("Account created. Now sign in.")
+                ok = add_user(nu, new_pass, cur, conn)
+                if ok:
+                    st.success("Account created. You can now sign in.")
+                else:
+                    st.warning("Username already exists — pick another")
 
 # If not authenticated — show a friendly locked screen and stop here
 if not st.session_state["authenticated"]:
@@ -122,7 +185,9 @@ if not st.session_state["authenticated"]:
     )
     st.stop()
 
-# ---------- SIDEBAR: Inputs (visible only after login) ----------
+# -------------------------
+# SIDEBAR: Inputs (visible only after login)
+# -------------------------
 st.sidebar.header("📥 Enter Your Information")
 
 monthly_income = st.sidebar.number_input("Monthly Income (₹)", min_value=0.0, value=0.0, step=1000.0, format="%.2f")
@@ -148,9 +213,11 @@ single_income = st.sidebar.checkbox("Single Income Household")
 
 calculate = st.sidebar.button("🚀 Calculate Life Risk Index")
 
-# ---------- CALCULATION ----------
+# -------------------------
+# CALCULATION & OUTPUT
+# -------------------------
 if calculate:
-    # defensive defaults (shouldn't be necessary due to number_input defaults, but safe)
+    # defensive defaults
     monthly_income = monthly_income or 0.0
     monthly_expense = monthly_expense or 0.0
     total_savings = total_savings or 0.0
@@ -242,6 +309,12 @@ if calculate:
         )
 
     st.markdown('</div>', unsafe_allow_html=True)
+
+# -------------------------
+# Clean up: close DB connection when script finishes (optional)
+# -------------------------
+# Note: Streamlit may keep the process alive; explicit close is fine.
+# conn.close()
 
 
 
