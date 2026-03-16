@@ -1,40 +1,5 @@
 import streamlit as st
 import numpy as np
-import streamlit_authenticator as stauth
-
-names = ["Admin"]
-usernames = ["admin"]
-passwords = ["admin123"]
-
-hashed_passwords = stauth.Hasher.hash_list(passwords)
-
-credentials = {
-    "usernames":{
-        "admin":{
-            "name":"Admin",
-            "password":hashed_passwords[0]
-        }
-    }
-}
-
-authenticator = stauth.Authenticate(
-    credentials,
-    "life_risk_cookie",
-    "abcdef",
-    cookie_expiry_days=1
-)
-
-login_result = authenticator.login()
-
-if login_result:
-    name = login_result[0]
-    authentication_status = login_result[1]
-    username = login_result[2]
-else:
-    authentication_status = None
-if authentication_status:
-
-    st.success(f"Welcome {name}")
 
     # Your existing dashboard code starts here
 
@@ -187,11 +152,7 @@ if calculate:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-elif authentication_status == False:
-    st.error("Wrong username or password")
 
-elif authentication_status == None:
-    st.warning("Please login")
 
 
 
