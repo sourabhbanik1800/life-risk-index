@@ -7,6 +7,89 @@ from datetime import datetime
 import json
 from io import BytesIO
 
+# --- Add near top of file with other imports ---
+import urllib.parse
+
+# --- Add this RESOURCE_MAP near your helper functions (e.g., after build_pdf_bytes) ---
+RESOURCE_MAP = {
+    "financial_emergency": [
+        {
+            "title": "SEBI — Financial Education Booklet (personal finance primer, emergency fund advice)",
+            "url": "https://investor.sebi.gov.in/pdf/downloadable-documents/Financial%20Education%20Booklet%20-%20English.pdf",
+            "source": "SEBI"
+        },
+        {
+            "title": "RBI — I Can Do (Financial Planning booklet)",
+            "url": "https://www.rbi.org.in/FinancialEducation/content/I%20Can%20Do_RBI.pdf",
+            "source": "Reserve Bank of India"
+        }
+    ],
+    "debt_management": [
+        {
+            "title": "SEBI — Financial Education Booklet (debt, budgeting sections)",
+            "url": "https://investor.sebi.gov.in/pdf/downloadable-documents/Financial%20Education%20Booklet%20-%20English.pdf",
+            "source": "SEBI"
+        }
+    ],
+    "upskilling": [
+        {
+            "title": "NSDC — Free Learning Resources (training curricula & short courses)",
+            "url": "https://nsdcindia.org/free-learning-resources",
+            "source": "NSDC"
+        },
+        {
+            "title": "Skill India Digital Hub — Free upskilling courses",
+            "url": "https://skillindiadigital.gov.in/",
+            "source": "Skill India"
+        }
+    ],
+    "health_bmi": [
+        {
+            "title": "WHO — Body Mass Index (BMI) guidance & classification",
+            "url": "https://www.who.int/data/gho/data/themes/topics/topic-details/GHO/body-mass-index",
+            "source": "World Health Organization"
+        },
+        {
+            "title": "National Institute of Nutrition — Dietary Guidelines for Indians (2024)",
+            "url": "https://www.nin.res.in/dietaryguidelines/pdfjs/locale/DGI07052024P.pdf",
+            "source": "National Institute of Nutrition"
+        }
+    ],
+    "health_insurance": [
+        {
+            "title": "IRDAI — Consumer Brochure / Insurance Consumer Education",
+            "url": "https://irdai.gov.in/documents/38105/49819/IRDA%2BBrochure.pdf/e76c551c-9036-44de-6933-bb5aed15004d?download=true",
+            "source": "IRDAI"
+        },
+        {
+            "title": "IRDAI — policyholder portal & consumer education",
+            "url": "https://irdai.gov.in/",
+            "source": "IRDAI"
+        }
+    ],
+    "smoking_cessation": [
+        {
+            "title": "WHO — Tobacco: Health effects & quitting resources",
+            "url": "https://www.who.int/health-topics/tobacco",
+            "source": "World Health Organization"
+        },
+    ]
+}
+
+def render_resources_for(key):
+    """
+    Render a compact list of reputable resources (links) for the given key.
+    """
+    resources = RESOURCE_MAP.get(key, [])
+    if not resources:
+        return
+    st.markdown("**Authoritative resources you can download / read:**")
+    for r in resources:
+        # markdown link that opens in a new tab
+        safe_url = r["url"]
+        st.markdown(f"- [{r['title']}]({safe_url}) — _{r['source']}_")
+    st.markdown("---")
+
 # optional: PDF generation
 try:
     from fpdf import FPDF
@@ -382,22 +465,46 @@ if calculate:
     c3.metric("🏥 Health", f"{round(H*100,1)}%")
     c4.metric("👨‍👩‍👧 Dependency", f"{round(D*100,1)}%")
 
-    # recommendations
-    st.markdown("### 🔎 Quick Recommendations")
+       # -------------------------
+    # Enhanced recommendations with official docs
+    # -------------------------
+    st.markdown("### 🔎 Quick Recommendations (official guidance links included)")
+
+    # Financial / budgeting
     if monthly_income < monthly_expense:
         st.info("Expenses exceed income — build a budget and cut discretionary spend.")
+        render_resources_for("financial_emergency")
+
+    # Debt
     if debt_income_ratio > 0.5:
         st.warning("High debt ratio — consider restructuring or advisory.")
-    if savings_ratio := (total_savings / (monthly_expense * 6) if monthly_expense > 0 else 0) < 1:
+        render_resources_for("debt_management")
+
+    # Emergency fund check
+    savings_ratio = (total_savings / (monthly_expense * 6) if monthly_expense > 0 else 0)
+    if savings_ratio < 1:
         st.info("Emergency fund shortfall — aim for 3–6 months of expenses.")
+        render_resources_for("financial_emergency")
+
+    # Career / upskilling
     if upskilling_frequency < 2:
         st.info("Upskilling: consider a short course / certification this year.")
+        render_resources_for("upskilling")
+
+    # BMI / Health
     if bmi > 25:
         st.info("Health: small lifestyle changes can improve BMI and resilience.")
+        render_resources_for("health_bmi")
+
+    # Insurance
     if not insurance:
         st.info("Consider health insurance to reduce catastrophic risk.")
+        render_resources_for("health_insurance")
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Smoking
+    if smoking:
+        st.info("Smoking increases health risk — seek cessation resources.")
+        render_resources_for("smoking_cessation")
 
     # celebration for good scores
     if LRI >= 0.75:
