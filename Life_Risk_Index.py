@@ -638,16 +638,16 @@ if calculate:
 
         st.markdown("**Financial resilience factors**")
         st.write(f"Emergency Fund Coverage contribution: **{round(emergency_contribution*100,2)}%**")
-        st.progress(emergency_coverage)
+        st.progress(emergency_score)
 
         st.write(f"Debt-to-Income health contribution: **{round(debt_contribution*100,2)}%**")
-        st.progress(debt_health)
+        st.progress(debt_score)
 
         st.write(f"EMI burden contribution: **{round(emi_contribution*100,2)}%**")
         st.progress(emi_health)
 
-        st.write(f"Savings / Investment rate contribution: **{round(savings_contribution*100,2)}%**")
-        st.progress(savings_rate_clamped)
+        st.write(f"Savings / Investment rate contribution: **{round(sip_contribution*100,2)}%**")
+        st.progress(sip_score)
 
         # show small computed numbers
         st.markdown(f"- Emergency months covered (incl. partial investments): **{round(emergency_months,2)} months**")
