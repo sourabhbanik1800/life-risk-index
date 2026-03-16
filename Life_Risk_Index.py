@@ -24,7 +24,11 @@ credentials,
 cookie_expiry_days=1
 )
 
-name, authentication_status, username = authenticator.login()
+login_result = authenticator.login()
+
+name = login_result[0]
+authentication_status = login_result[1]
+username = login_result[2]
 
 if authentication_status:
 
