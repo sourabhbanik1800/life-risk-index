@@ -1,5 +1,36 @@
 import streamlit as st
 import numpy as np
+import streamlit_authenticator as stauth
+
+names = ["Admin"]
+usernames = ["admin"]
+passwords = ["admin123"]
+
+hashed_passwords = stauth.Hasher(passwords).generate()
+
+credentials = {
+    "usernames":{
+        "admin":{
+            "name":"Admin",
+            "password":hashed_passwords[0]
+        }
+    }
+}
+
+authenticator = stauth.Authenticate(
+credentials,
+"life_risk_cookie",
+"abcdef",
+cookie_expiry_days=1
+)
+
+name, authentication_status, username = authenticator.login("Login","main")
+
+if authentication_status:
+
+    st.success(f"Welcome {name}")
+
+    # Your existing dashboard code starts here
 
 st.set_page_config(page_title="Life Risk Index", page_icon="📊", layout="wide")
 
@@ -149,6 +180,12 @@ if calculate:
         st.markdown('<div class="recommend-card">⚠️ Obtain health insurance. <a href="https://www.insuranceinstituteofindia.com/documents/6454111/5517dc58-2716-4b6d-afed-ab1fc703a79d" target="_blank">Insurance Guide</a></div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
+elif authentication_status == False:
+    st.error("Wrong username or password")
+
+elif authentication_status == None:
+    st.warning("Please login")
 
 
 
