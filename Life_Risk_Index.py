@@ -468,7 +468,7 @@ if calculate:
     
     # Step 7 — Job stability multiplier
     js_map = {"Low":0.9,"Medium":1,"High":1.05}
-    job_factor = job_map[job_stability]
+    job_factor = js[job_stability]
     
     # Step 8 — Final Financial Score
     F = (
