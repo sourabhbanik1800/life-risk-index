@@ -633,7 +633,7 @@ if calculate:
     with tab1:
         emergency_contribution = 0.40 * emergency_score
         debt_contribution = 0.25 * debt_score
-        emi_contribution = 0.20 * emi_score
+        emi_contribution = 0.20 * emi_health
         savings_contribution = 0.15 * savings_rate_clamped
 
         st.markdown("**Financial resilience factors**")
