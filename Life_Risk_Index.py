@@ -468,7 +468,7 @@ if calculate:
     
     # Step 7 — Job stability multiplier
     js_map = {"Low":0.9,"Medium":1,"High":1.05}
-    job_factor = js_map[job_stability]
+    job_factor = job_map[job_stability]
     
     # Step 8 — Final Financial Score
     F = (
@@ -677,7 +677,7 @@ if calculate:
         st.progress(cert_recency)
 
         st.markdown(f"- Age/experience multiplier applied: **{round(age_boost,2)}x**")
-        st.markdown(f"- Job stability multiplier applied: **{round(js_factor,2)}x**")
+        st.markdown(f"- Job stability multiplier applied: **{round(job_factor,2)}x**")
         st.info(f"Final Career Score = {round(S*100,2)}%")
 
     # ---------- Health ----------
