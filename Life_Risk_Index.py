@@ -738,12 +738,12 @@ if calculate:
         render_resources_for("financial_emergency")
 
     # Debt
-    if debt_to_income > 0.5 or (monthly_emi / monthly_income if monthly_income>0 else 1.0) > 0.4:
+    if debt_ratio > 0.5 or (monthly_emi / monthly_income if monthly_income > 0 else 1.0) > 0.4:
         st.warning("High debt burden — consider restructuring, EMI negotiation or advisory.")
         render_resources_for("debt_management")
 
     # Emergency fund check
-    savings_months_display = (total_savings + effective_liquid_from_investment * 6.0) / monthly_expense if monthly_expense > 0 else 0
+    savings_months_display = (total_savings + monthly_investment * 3.0) / monthly_expense if monthly_expense > 0 else 0
     if savings_months_display < 3:
         st.info("Emergency fund shortfall — aim for at least 3 months (ideally 6) of expenses.")
         render_resources_for("financial_emergency")
