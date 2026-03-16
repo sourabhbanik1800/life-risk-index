@@ -10,47 +10,75 @@ st.set_page_config(page_title="Life Risk Index", page_icon="📊", layout="wide"
 # ---------------------------------------------------
 st.markdown("""
 <style>
-[data-testid="stAppViewContainer"] {
-    background: radial-gradient(circle at 20% 20%, #1a2a3a, #0f2027 60%);
+
+[data-testid="stAppViewContainer"]{
+background:#F6F9FC;
 }
-.main-title {
-    font-size: 56px; font-weight: 900;
-    background: linear-gradient(90deg,#00F5A0,#00D9F5,#8E2DE2);
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    text-align:center;
+
+.main-title{
+font-size:50px;
+font-weight:800;
+text-align:center;
+color:#0A2540;
+margin-bottom:30px;
 }
-.glass-card {
-    background: rgba(255,255,255,0.06);
-    backdrop-filter: blur(25px);
-    padding: 35px;
-    border-radius: 28px;
+
+.glass-card{
+background:white;
+padding:30px;
+border-radius:18px;
+box-shadow:0px 6px 20px rgba(0,0,0,0.08);
+margin-bottom:25px;
 }
-.metric-card {
-    padding: 55px; border-radius: 30px; text-align: center;
-    font-size: 48px; font-weight: 800; color: white;
-    background: linear-gradient(135deg,#00F5A0,#00D9F5,#8E2DE2);
+
+.metric-card{
+background:linear-gradient(135deg,#007BFF,#00C6FF);
+color:white;
+font-size:55px;
+font-weight:900;
+text-align:center;
+padding:45px;
+border-radius:20px;
 }
-.break-card {
-    background: rgba(255,255,255,0.07);
-    padding: 20px;
-    border-radius: 18px;
-    text-align: center;
-    color: white;
+
+.break-card{
+background:white;
+padding:20px;
+border-radius:15px;
+text-align:center;
+box-shadow:0px 4px 12px rgba(0,0,0,0.05);
 }
-.break-title { font-size: 16px; opacity: 0.8; }
-.break-score { font-size: 28px; font-weight: 700; }
-.recommend-card {
-    background: rgba(255,255,255,0.1);
-    padding: 14px 18px;
-    border-radius: 14px;
-    margin-bottom: 12px;
-    color: #e6edf5;
-    border-left: 4px solid #00F5A0;
+
+.break-title{
+font-size:14px;
+color:#6B7280;
 }
+
+.break-score{
+font-size:28px;
+font-weight:800;
+color:#0A2540;
+}
+
+.recommend-card{
+background:#F1F5F9;
+padding:16px;
+border-radius:12px;
+margin-bottom:10px;
+border-left:5px solid #2563EB;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">Life Risk Index Dashboard</div>', unsafe_allow_html=True)
+st.markdown("""
+<div class='glass-card'>
+<h1 class='main-title'>📊 Life Risk Index Dashboard</h1>
+<p style='text-align:center;color:#6B7280;font-size:18px'>
+Evaluate your financial, career, health and dependency risk in one unified score
+</p>
+</div>
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------
 # SIDEBAR
