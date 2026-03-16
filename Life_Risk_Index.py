@@ -432,49 +432,55 @@ if calculate:
     number_of_earners = int(number_of_earners or 1)
 
     # ----- Financial (F) - integrated model with monthly_investment -----
-    # Treat monthly_investment as partially liquid (assume 50% medium-term liquidity for emergency model)
-    effective_liquid_from_investment = monthly_investment * 0.5  # conservative
-    # effective savings for emergency coverage
-    emergency_months = (total_savings + effective_liquid_from_investment * 6.0) / monthly_expense if monthly_expense > 0 else (1 if total_savings + monthly_investment > 0 else 0)
-    emergency_coverage = min(max(emergency_months / 6.0, 0.0), 1.0)  # target 6 months
+   # ----- Financial Stability Score (Enhanced Logic) -----
 
-    # annual debt-to-income
-    annual_income = monthly_income * 12 if monthly_income > 0 else 0.0
-    debt_to_income = (total_debt / annual_income) if annual_income > 0 else 1.0
-    debt_health = 1.0 - min(debt_to_income, 1.0)
+# Step 1 — Total expenses include EMI and SIP
+total_expense = monthly_expense + monthly_emi + monthly_investment
 
-    # EMI burden on monthly cashflow (consider monthly_investment as committed outflow too)
-    effective_monthly_outflows = monthly_expense + monthly_emi + (monthly_investment * 0.4)
-    emi_burden = (monthly_emi / monthly_income) if monthly_income > 0 else 1.0
-    emi_health = 1.0 - min(emi_burden, 1.0)
+# Step 2 — Cashflow ratio
+expense_ratio = total_expense / monthly_income if monthly_income > 0 else 1
 
-    # savings rate (monthly): include monthly_investment as positive saving behavior
-    monthly_savings_flow = max(monthly_income - monthly_expense, 0.0)
-    investment_boost = min(monthly_investment / monthly_income, 0.3)
+# Ideal financial planning guideline
+# Expenses should not exceed ~70% of income
 
-    savings_rate = (monthly_savings_flow / monthly_income) + investment_boost
-    savings_rate = (monthly_savings_flow / monthly_income) if monthly_income > 0 else 0.0
-    savings_rate_clamped = min(max(savings_rate, 0.0), 1.0)
+cashflow_score = 1 - min(expense_ratio, 1)
 
-    # job stability uplift (small)
-    js_map = {"Low": 0.95, "Medium": 1.0, "High": 1.06}
-    js_factor = js_map.get(job_stability, 1.0)
+# Step 3 — EMI burden (debt stress)
+emi_ratio = monthly_emi / monthly_income if monthly_income > 0 else 1
 
-    # combine — weights emphasize liquidity and debt burden; penalize negative cashflow
-    cashflow_penalty = 0.0
-    if monthly_income > 0 and effective_monthly_outflows > monthly_income:
-        cashflow_penalty = min((effective_monthly_outflows - monthly_income) / monthly_income, 1.0)
+# Ideal EMI limit ~30% income
+emi_health = 1 - min(emi_ratio / 0.30, 1)
 
-    F = (
-        0.40 * emergency_coverage
-        + 0.25 * debt_health
-        + 0.20 * emi_health
-        + 0.15 * savings_rate_clamped
-    )
-    # apply job stability small boost to financial confidence
-    F = F * js_factor
-    F = F * (1.0 - 0.65 * cashflow_penalty)
-    F = max(0.0, min(F, 1.0))
+# Step 4 — Investment discipline (SIP reward)
+sip_ratio = monthly_investment / monthly_income if monthly_income > 0 else 0
+
+# Ideal SIP = 20–30% income
+sip_score = min(sip_ratio / 0.25, 1)
+
+# Step 5 — Emergency fund calculation
+emergency_months = total_savings / monthly_expense if monthly_expense > 0 else 0
+emergency_score = min(emergency_months / 6, 1)
+
+# Step 6 — Debt burden
+annual_income = monthly_income * 12 if monthly_income > 0 else 0
+debt_ratio = total_debt / annual_income if annual_income > 0 else 1
+debt_score = 1 - min(debt_ratio, 1)
+
+# Step 7 — Job stability multiplier
+js_map = {"Low":0.9,"Medium":1,"High":1.05}
+job_factor = js_map[job_stability]
+
+# Step 8 — Final Financial Score
+F = (
+      0.30 * emergency_score
+    + 0.20 * debt_score
+    + 0.20 * emi_health
+    + 0.15 * cashflow_score
+    + 0.15 * sip_score
+)
+
+F = F * job_factor
+F = max(0, min(F,1))
 
     # ----- Career (S) with job_stability included -----
     edu_map = {"High School": 1, "Graduate": 2, "Post Graduate": 3, "Professional": 4}
