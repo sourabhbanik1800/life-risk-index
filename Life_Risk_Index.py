@@ -85,7 +85,6 @@ def render_resources_for(key):
         return
     st.markdown("**Authoritative resources you can download / read:**")
     for r in resources:
-        # markdown link that opens in a new tab
         safe_url = r["url"]
         st.markdown(f"- [{r['title']}]({safe_url}) — _{r['source']}_")
     st.markdown("---")
@@ -197,6 +196,9 @@ def get_score_by_id(score_id: int, cur):
     return cur.fetchone()
 
 def build_text_report(username: str, lri: float, F: float, S: float, H: float, D: float, created_at: str) -> str:
+    """
+    More informative textual report showing component values and short rationale.
+    """
     lines = []
     lines.append("Life Risk Index Report")
     lines.append(f"User: {username}")
@@ -210,18 +212,41 @@ def build_text_report(username: str, lri: float, F: float, S: float, H: float, D
     lines.append(f"  Health (H): {round(H * 100, 2)}%")
     lines.append(f"  Dependency (D): {round(D * 100, 2)}%")
     lines.append("")
-    lines.append("Recommendations (short):")
-    # simple rules
-    if F < 0.4:
-        lines.append(" - Improve financial resilience: build emergency savings and manage debt.")
+    lines.append("Short rationale & recommendations:")
+    # Financial rationale
+    if F < 0.45:
+        lines.append(" - Financial: Low resilience. Priority: build emergency fund, reduce high-cost debt, and improve savings rate.")
+    elif F < 0.70:
+        lines.append(" - Financial: Moderate. Keep building liquidity and reduce EMI burden where possible.")
+    else:
+        lines.append(" - Financial: Strong. Maintain savings discipline and avoid over-leveraging.")
+
+    # Career rationale
     if S < 0.5:
-        lines.append(" - Invest in skills and career development.")
+        lines.append(" - Career: Upskilling and certification recency are low relative to your role/industry — consider targeted courses.")
+    elif S < 0.75:
+        lines.append(" - Career: Good. Keep updating skills and monitor industry demand.")
+    else:
+        lines.append(" - Career: Strong. Continue to sustain market relevance via occasional upskilling.")
+
+    # Health rationale
     if H < 0.6:
-        lines.append(" - Check health habits; consult healthcare resources.")
+        lines.append(" - Health: Health indicators suggest elevated risk (BMI, chronic conditions, or smoking). Consult healthcare and consider insurance.")
+    else:
+        lines.append(" - Health: Good. Keep healthy habits and regular checkups.")
+
+    # Dependency rationale
     if D < 0.5:
-        lines.append(" - Reduce dependency risk: plan long-term financial cover.")
-    if F >= 0.7 and S >= 0.6 and H >= 0.7:
-        lines.append(" - Great overall profile — maintain momentum!")
+        lines.append(" - Dependency: Household is relatively vulnerable (multiple dependents, single income, or age-related risk). Plan life cover & contingencies.")
+    else:
+        lines.append(" - Dependency: Dependency risk is manageable. Maintain contingency planning for dependents.")
+
+    lines.append("")
+    lines.append("Actionable next steps (prioritized):")
+    lines.append("  1) Build 3–6 months emergency fund.")
+    lines.append("  2) Reduce high-interest debt / negotiate EMIs.")
+    lines.append("  3) Enrol in 1 short certification this year.")
+    lines.append("  4) If uninsured, consider basic health & life cover.")
     return "\n".join(lines)
 
 def build_pdf_bytes(report_text: str, title: str = "Life Risk Index Report") -> bytes:
@@ -360,6 +385,11 @@ with left:
     total_debt = st.number_input("Total Debt (₹)", min_value=0.0, value=0.0, step=1000.0, format="%.2f")
     monthly_emi = st.number_input("Monthly EMI (₹)", min_value=0.0, value=0.0, step=500.0, format="%.2f")
 
+    # NEW inputs
+    monthly_investment = st.number_input("Monthly Investment (₹) — SIP / mutual funds / recurring", min_value=0.0, value=0.0, step=500.0, format="%.2f")
+    job_stability = st.selectbox("Job Stability", ["Low", "Medium", "High"])
+    number_of_earners = st.slider("Number of Earners in Household", 1, 4, 1)
+
     education_level = st.selectbox("Education Level", ["High School", "Graduate", "Post Graduate", "Professional"])
     industry_demand = st.selectbox("Industry Demand", ["Low", "Medium", "High"])
     upskilling_frequency = st.slider("Upskilling per year", 0, 6, 1)
@@ -390,38 +420,151 @@ with right:
 # Calculation
 # -------------------------
 if calculate:
-    # defensive defaults
-    monthly_income = monthly_income or 0.0
-    monthly_expense = monthly_expense or 0.0
-    total_savings = total_savings or 0.0
-    total_debt = total_debt or 0.0
-    monthly_emi = monthly_emi or 0.0
-    weight = weight or 0.0
-    height_cm = height_cm or 0.0
+    # defensive defaults & casts
+    monthly_income = float(monthly_income or 0.0)
+    monthly_expense = float(monthly_expense or 0.0)
+    total_savings = float(total_savings or 0.0)
+    total_debt = float(total_debt or 0.0)
+    monthly_emi = float(monthly_emi or 0.0)
+    monthly_investment = float(monthly_investment or 0.0)
+    weight = float(weight or 0.0)
+    height_cm = float(height_cm or 0.0)
+    number_of_earners = int(number_of_earners or 1)
 
-    # Financial F
-    savings_ratio = total_savings / (monthly_expense * 6) if monthly_expense > 0 else 0
-    debt_income_ratio = total_debt / (monthly_income * 12) if monthly_income > 0 else 0
-    emi_ratio = monthly_emi / monthly_income if monthly_income > 0 else 0
-    F = 0.5 * min(savings_ratio, 1) + 0.3 * (1 - min(debt_income_ratio, 1)) + 0.2 * (1 - min(emi_ratio, 1))
+    # ----- Financial (F) - integrated model with monthly_investment -----
+    # Treat monthly_investment as partially liquid (assume 50% medium-term liquidity for emergency model)
+    effective_liquid_from_investment = monthly_investment * 0.5  # conservative
+    # effective savings for emergency coverage
+    emergency_months = (total_savings + effective_liquid_from_investment * 6.0) / monthly_expense if monthly_expense > 0 else (1 if total_savings + monthly_investment > 0 else 0)
+    emergency_coverage = min(max(emergency_months / 6.0, 0.0), 1.0)  # target 6 months
 
-    # Career S
+    # annual debt-to-income
+    annual_income = monthly_income * 12 if monthly_income > 0 else 0.0
+    debt_to_income = (total_debt / annual_income) if annual_income > 0 else 1.0
+    debt_health = 1.0 - min(debt_to_income, 1.0)
+
+    # EMI burden on monthly cashflow (consider monthly_investment as committed outflow too)
+    effective_monthly_outflows = monthly_expense + monthly_emi + monthly_investment
+    emi_burden = (monthly_emi / monthly_income) if monthly_income > 0 else 1.0
+    emi_health = 1.0 - min(emi_burden, 1.0)
+
+    # savings rate (monthly): include monthly_investment as positive saving behavior
+    monthly_savings_flow = max(monthly_income - monthly_expense - monthly_investment, 0.0)
+    savings_rate = (monthly_savings_flow / monthly_income) if monthly_income > 0 else 0.0
+    savings_rate_clamped = min(max(savings_rate, 0.0), 1.0)
+
+    # job stability uplift (small)
+    js_map = {"Low": 0.95, "Medium": 1.0, "High": 1.06}
+    js_factor = js_map.get(job_stability, 1.0)
+
+    # combine — weights emphasize liquidity and debt burden; penalize negative cashflow
+    cashflow_penalty = 0.0
+    if monthly_income > 0 and effective_monthly_outflows > monthly_income:
+        cashflow_penalty = min((effective_monthly_outflows - monthly_income) / monthly_income, 1.0)
+
+    F = (
+        0.40 * emergency_coverage
+        + 0.25 * debt_health
+        + 0.20 * emi_health
+        + 0.15 * savings_rate_clamped
+    )
+    # apply job stability small boost to financial confidence
+    F = F * js_factor
+    F = F * (1.0 - 0.65 * cashflow_penalty)
+    F = max(0.0, min(F, 1.0))
+
+    # ----- Career (S) with job_stability included -----
     edu_map = {"High School": 1, "Graduate": 2, "Post Graduate": 3, "Professional": 4}
     ind_map = {"Low": 1, "Medium": 2, "High": 3}
-    S = 0.25 * (edu_map[education_level] / 4) + 0.30 * (ind_map[industry_demand] / 3) + 0.25 * min(upskilling_frequency / 4, 1) + 0.20 * (1 - min(years_since_cert / 5, 1))
+    edu_score = edu_map[education_level] / 4.0
+    ind_score = ind_map[industry_demand] / 3.0
+    upskill_score = min(upskilling_frequency / 4.0, 1.0)
+    cert_recency = max(0.0, 1.0 - (years_since_cert / 5.0))
 
-    # Health H
-    height_m = height_cm / 100 if height_cm > 0 else 1
-    bmi = weight / (height_m ** 2) if height_cm > 0 and weight > 0 else 0
-    bmi_score = 1 if 18.5 <= bmi <= 24.9 else 0.6
-    H = (bmi_score + (1 - int(chronic_disease)) + (1 - int(smoking)) + int(insurance)) / 4
+    # age/experience adjustment
+    if 25 <= age <= 45:
+        age_boost = 1.0
+    elif 46 <= age <= 55:
+        age_boost = 0.95
+    else:
+        age_boost = 0.9
 
-    # Dependency D
-    dependency_factor = min(dependents / 4, 1)
-    D = 0.7 * (1 - dependency_factor) + 0.3 * (1 - int(single_income))
+    S_raw = 0.30 * edu_score + 0.30 * ind_score + 0.25 * upskill_score + 0.15 * cert_recency
+    # incorporate job stability as multiplier (stable job increases career resilience slightly)
+    S = S_raw * age_boost * js_factor
+    S = max(0.0, min(S, 1.0))
 
-    # Life Risk Index
+    # if financial situation is poor, slightly reduce career resilience (less ability to invest in learning)
+    if F < 0.35:
+        S = S * 0.96
+
+    # ----- Health (H) -----
+    height_m = (height_cm / 100.0) if height_cm > 0 else None
+    if height_m and weight > 0:
+        bmi = weight / (height_m ** 2)
+    else:
+        bmi = 0.0
+
+    if 18.5 <= bmi <= 24.9:
+        bmi_score = 1.0
+    elif 25.0 <= bmi <= 29.9:
+        bmi_score = 0.75
+    elif bmi >= 30.0:
+        bmi_score = 0.45
+    elif 16.0 <= bmi < 18.5:
+        bmi_score = 0.7
+    else:
+        bmi_score = 0.6 if bmi > 0 else 0.7
+
+    smoking_penalty = 0.15 if smoking else 0.0
+    chronic_penalty = 0.25 if chronic_disease else 0.0
+    insurance_bonus = 0.08 if insurance else 0.0
+
+    if age >= 60:
+        age_factor = 0.75
+    elif age >= 45:
+        age_factor = 0.85
+    elif age >= 30:
+        age_factor = 0.95
+    else:
+        age_factor = 1.0
+
+    H_raw = (0.50 * bmi_score + 0.20 * (1 - chronic_penalty) + 0.20 * (1 - smoking_penalty) + 0.10 * (1 + insurance_bonus))
+    H = H_raw * age_factor
+    H = max(0.0, min(H, 1.0))
+
+    # ----- Dependency (D) with number_of_earners -----
+    dep_count = dependents
+    dep_base_risk = min(dep_count * 0.18, 0.9)
+
+    single_income_risk = 0.22 if single_income else 0.0
+
+    # age-based dependency risk
+    if age >= 60:
+        age_dep_risk = 0.25
+    elif age >= 50:
+        age_dep_risk = 0.18
+    elif age >= 40:
+        age_dep_risk = 0.12
+    elif age >= 30:
+        age_dep_risk = 0.08
+    else:
+        age_dep_risk = 0.05
+
+    # reduce dependency risk by number of earners (more earners -> less household vulnerability)
+    # each additional earner reduces dependency risk by ~12% multiplicatively but keep a floor
+    earner_factor = 1.0 - 0.12 * (number_of_earners - 1)
+    earner_factor = max(0.6, earner_factor)  # do not drop below 0.6 to avoid unrealistic elimination
+    dep_base_risk = dep_base_risk * earner_factor
+
+    total_dep_risk = dep_base_risk + single_income_risk + age_dep_risk
+    total_dep_risk = min(total_dep_risk, 0.95)
+    D = 1.0 - total_dep_risk
+    D = max(0.0, min(D, 1.0))
+
+    # ----- Life Risk Index (LRI) -----
     LRI = 0.40 * F + 0.25 * S + 0.20 * H + 0.15 * D
+    LRI = max(0.0, min(LRI, 1.0))
 
     # build report_text (we do NOT store inputs)
     created_at = datetime.utcnow().isoformat()
@@ -465,35 +608,38 @@ if calculate:
     c3.metric("🏥 Health", f"{round(H*100,1)}%")
     c4.metric("👨‍👩‍👧 Dependency", f"{round(D*100,1)}%")
 
-       # -------------------------
+    # -------------------------
     # Enhanced recommendations with official docs
     # -------------------------
     st.markdown("### 🔎 Quick Recommendations (official guidance links included)")
 
     # Financial / budgeting
-    if monthly_income < monthly_expense:
-        st.info("Expenses exceed income — build a budget and cut discretionary spend.")
+    if monthly_income < monthly_expense + monthly_investment + monthly_emi:
+        st.info("Expenses + investments + EMIs exceed income — re-evaluate cashflow (reduce discretionary spend or investment commitments temporarily).")
         render_resources_for("financial_emergency")
 
     # Debt
-    if debt_income_ratio > 0.5:
-        st.warning("High debt ratio — consider restructuring or advisory.")
+    if debt_to_income > 0.5 or (monthly_emi / monthly_income if monthly_income>0 else 1.0) > 0.4:
+        st.warning("High debt burden — consider restructuring, EMI negotiation or advisory.")
         render_resources_for("debt_management")
 
     # Emergency fund check
-    savings_ratio = (total_savings / (monthly_expense * 6) if monthly_expense > 0 else 0)
-    if savings_ratio < 1:
-        st.info("Emergency fund shortfall — aim for 3–6 months of expenses.")
+    savings_months_display = (total_savings + effective_liquid_from_investment * 6.0) / monthly_expense if monthly_expense > 0 else 0
+    if savings_months_display < 3:
+        st.info("Emergency fund shortfall — aim for at least 3 months (ideally 6) of expenses.")
         render_resources_for("financial_emergency")
 
     # Career / upskilling
-    if upskilling_frequency < 2:
-        st.info("Upskilling: consider a short course / certification this year.")
+    if upskilling_frequency < 2 or cert_recency < 0.5:
+        st.info("Career: Consider enrolling in a short course or certification this year.")
         render_resources_for("upskilling")
 
     # BMI / Health
     if bmi > 25:
-        st.info("Health: small lifestyle changes can improve BMI and resilience.")
+        st.info("Health: Small lifestyle changes can improve BMI and resilience; consider dietary guidance.")
+        render_resources_for("health_bmi")
+    if chronic_disease:
+        st.info("Health: Manage chronic conditions proactively with your healthcare provider.")
         render_resources_for("health_bmi")
 
     # Insurance
@@ -567,11 +713,3 @@ else:
             st.download_button("📄 Download TXT report", data=chosen_row["report_text"].encode("utf-8"), file_name=f"lri_report_{chosen_row['id']}.txt", mime="text/plain")
 
 # Done
-
-
-
-
-
-
-
-
