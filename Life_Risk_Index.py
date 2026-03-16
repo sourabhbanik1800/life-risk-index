@@ -608,6 +608,116 @@ if calculate:
     c3.metric("🏥 Health", f"{round(H*100,1)}%")
     c4.metric("👨‍👩‍👧 Dependency", f"{round(D*100,1)}%")
 
+    # ------------------------------------
+    # Score Explanation Panel (contribution breakdown)
+    # ------------------------------------
+    st.markdown("### 🔍 Score Breakdown (how sub-factors contributed)")
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "💰 Financial",
+        "📈 Career",
+        "🏥 Health",
+        "👨‍👩‍👧 Dependency"
+    ])
+
+    # ---------- Financial ----------
+    with tab1:
+        emergency_contribution = 0.40 * emergency_coverage
+        debt_contribution = 0.25 * debt_health
+        emi_contribution = 0.20 * emi_health
+        savings_contribution = 0.15 * savings_rate_clamped
+
+        st.markdown("**Financial resilience factors**")
+        st.write(f"Emergency Fund Coverage contribution: **{round(emergency_contribution*100,2)}%**")
+        st.progress(emergency_coverage)
+
+        st.write(f"Debt-to-Income health contribution: **{round(debt_contribution*100,2)}%**")
+        st.progress(debt_health)
+
+        st.write(f"EMI burden contribution: **{round(emi_contribution*100,2)}%**")
+        st.progress(emi_health)
+
+        st.write(f"Savings / Investment rate contribution: **{round(savings_contribution*100,2)}%**")
+        st.progress(savings_rate_clamped)
+
+        # show small computed numbers
+        st.markdown(f"- Emergency months covered (incl. partial investments): **{round(emergency_months,2)} months**")
+        st.markdown(f"- Debt-to-income ratio (annual): **{round(debt_to_income,2)}**")
+        st.markdown(f"- EMI burden (monthly_emi / income): **{round(emi_burden,2)}**")
+        st.markdown(f"- Monthly investment treated as partially liquid: **₹{round(effective_liquid_from_investment,2)}** per month equivalent")
+        st.info(f"Final Financial Score = {round(F*100,2)}%")
+
+    # ---------- Career ----------
+    with tab2:
+        edu_contribution = 0.30 * edu_score
+        industry_contribution = 0.30 * ind_score
+        upskill_contribution = 0.25 * upskill_score
+        cert_contribution = 0.15 * cert_recency
+
+        st.markdown("**Career stability factors**")
+        st.write(f"Education contribution: **{round(edu_contribution*100,2)}%**")
+        st.progress(edu_score)
+
+        st.write(f"Industry demand contribution: **{round(industry_contribution*100,2)}%**")
+        st.progress(ind_score)
+
+        st.write(f"Upskilling contribution: **{round(upskill_contribution*100,2)}%**")
+        st.progress(upskill_score)
+
+        st.write(f"Certification recency contribution: **{round(cert_contribution*100,2)}%**")
+        st.progress(cert_recency)
+
+        st.markdown(f"- Age/experience multiplier applied: **{round(age_boost,2)}x**")
+        st.markdown(f"- Job stability multiplier applied: **{round(js_factor,2)}x**")
+        st.info(f"Final Career Score = {round(S*100,2)}%")
+
+    # ---------- Health ----------
+    with tab3:
+        bmi_contribution = 0.50 * bmi_score
+        chronic_contribution = 0.20 * (1 - chronic_penalty)
+        smoking_contribution = 0.20 * (1 - smoking_penalty)
+        insurance_contribution = 0.10 * (1 if insurance else 0.0)
+
+        st.markdown("**Health resilience factors**")
+        st.write(f"BMI contribution: **{round(bmi_contribution*100,2)}%**")
+        st.progress(bmi_score)
+
+        st.write(f"Chronic condition contribution: **{round(chronic_contribution*100,2)}%**")
+        st.progress(1 - chronic_penalty)
+
+        st.write(f"Smoking contribution: **{round(smoking_contribution*100,2)}%**")
+        st.progress(1 - smoking_penalty)
+
+        st.write(f"Health insurance protection (binary): **{round(insurance_contribution*100,2)}%**")
+        st.progress(1.0 if insurance else 0.0)
+
+        st.markdown(f"- Age health factor applied: **{round(age_factor,2)}x**")
+        st.info(f"Final Health Score = {round(H*100,2)}%")
+
+    # ---------- Dependency ----------
+    with tab4:
+        dependent_risk = dep_base_risk
+        dependent_progress = 1.0 - dependent_risk
+        single_income_progress = 1.0 - single_income_risk
+        age_dep_progress = 1.0 - age_dep_risk
+        earner_protection = 1.0 - earner_factor
+
+        st.markdown("**Household dependency risk factors**")
+        st.write(f"Dependents risk (contribution to risk): **{round(dependent_risk*100,2)}%**")
+        st.progress(dependent_progress)
+
+        st.write(f"Single income risk (contribution to risk): **{round(single_income_risk*100,2)}%**")
+        st.progress(single_income_progress)
+
+        st.write(f"Age dependency risk (contribution to risk): **{round(age_dep_risk*100,2)}%**")
+        st.progress(age_dep_progress)
+
+        st.write(f"Multiple earners protection: **{round(earner_protection*100,2)}%**")
+        st.progress(earner_protection)
+
+        st.markdown(f"- Number of earners used: **{number_of_earners}**")
+        st.info(f"Final Dependency Score = {round(D*100,2)}%")
+
     # -------------------------
     # Enhanced recommendations with official docs
     # -------------------------
