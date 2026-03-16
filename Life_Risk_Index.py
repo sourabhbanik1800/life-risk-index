@@ -18,18 +18,20 @@ credentials = {
 }
 
 authenticator = stauth.Authenticate(
-credentials,
-"life_risk_cookie",
-"abcdef",
-cookie_expiry_days=1
+    credentials,
+    "life_risk_cookie",
+    "abcdef",
+    cookie_expiry_days=1
 )
 
 login_result = authenticator.login()
 
-name = login_result[0]
-authentication_status = login_result[1]
-username = login_result[2]
-
+if login_result:
+    name = login_result[0]
+    authentication_status = login_result[1]
+    username = login_result[2]
+else:
+    authentication_status = None
 if authentication_status:
 
     st.success(f"Welcome {name}")
